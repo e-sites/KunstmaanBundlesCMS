@@ -110,50 +110,53 @@ class NodeRepository extends NestedTreeRepository
         return $query->getResult();
     }
 
-    /**
-     * @param HasNodeInterface $hasNode
-     *
-     * @return Node|null
-     */
-    public function getNodeFor(HasNodeInterface $hasNode)
-    {
-        /* @var NodeVersion $nodeVersion */
-        $nodeVersion = $this->getEntityManager()->getRepository(
-            'KunstmaanNodeBundle:NodeVersion'
-        )->getNodeVersionFor(
-            $hasNode
-        );
-        if (!is_null($nodeVersion)) {
-            /* @var NodeTranslation $nodeTranslation */
-            $nodeTranslation = $nodeVersion->getNodeTranslation();
-            if (!is_null($nodeTranslation)) {
-                return $nodeTranslation->getNode();
-            }
-        }
+	/**
+	 * @param HasNodeInterface $hasNode
+	 *
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 *
+	 * @return Node|null
+	 */
+	public function getNodeFor(HasNodeInterface $hasNode)
+	{
+		/* @var NodeVersion $nodeVersion */
+		$nodeVersion = $this->getEntityManager()->getRepository(
+			'KunstmaanNodeBundle:NodeVersion'
+		)->getNodeVersionFor(
+			$hasNode
+		);
+		if (!is_null($nodeVersion)) {
+			/* @var NodeTranslation $nodeTranslation */
+			$nodeTranslation = $nodeVersion->getNodeTranslation();
+			if (!is_null($nodeTranslation)) {
+				return $nodeTranslation->getNode();
+			}
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    /**
-     * @param int    $id         The id
-     * @param string $entityName The class name
-     *
-     * @return Node|null
-     */
-    public function getNodeForIdAndEntityname($id, $entityName)
-    {
-        /* @var NodeVersion $nodeVersion */
-        $nodeVersion = $this->getEntityManager()->getRepository(
-            'KunstmaanNodeBundle:NodeVersion'
-        )->findOneBy(
-            array('refId' => $id, 'refEntityName' => $entityName)
-        );
-        if ($nodeVersion) {
-            return $nodeVersion->getNodeTranslation()->getNode();
-        }
+	/**
+	 * @param int    $id         The id
+	 * @param string $entityName The class name
+	 *
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 *
+	 * @return Node|null
+	 */
+	public function getNodeForIdAndEntityname($id, $entityName)
+	{
+		/* @var NodeVersion $nodeVersion */
+		$nodeVersion = $this->getEntityManager()->getRepository(
+			'KunstmaanNodeBundle:NodeVersion'
+		)->getNodeVersionForIdAndEntityname($id, $entityName);
 
-        return null;
-    }
+		if ($nodeVersion) {
+			return $nodeVersion->getNodeTranslation()->getNode();
+		}
+
+		return null;
+	}
 
     /**
      * @param Node   $parentNode The parent node (may be null)
