@@ -33,6 +33,7 @@ class NodeVersionRepository extends EntityRepository
 	 */
 	public function getNodeVersionForIdAndEntityname($id, $entityName) {
 		return $this->createQueryBuilder('node_version')
+			->addSelect('node_translation')
 			->join('node_version.nodeTranslation', 'node_translation')
 			->where('node_version.refId = :refId')
 			->andWhere('node_version.refEntityName = :refEntityName')
