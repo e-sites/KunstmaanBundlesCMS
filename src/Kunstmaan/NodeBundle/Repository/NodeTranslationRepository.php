@@ -171,35 +171,41 @@ class NodeTranslationRepository extends EntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    /**
-     * Get the node translation for a node
-     *
-     * @param HasNodeInterface $hasNode
-     *
-     * @return NodeTranslation
-     */
+	/**
+	 * Get the node translation for a node
+	 *
+	 * @param HasNodeInterface $hasNode
+	 *
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 *
+	 * @return NodeTranslation
+	 */
     public function getNodeTranslationFor(HasNodeInterface $hasNode)
     {
-        /* @var NodeVersion $nodeVersion */
-        $nodeVersion = $this->getEntityManager()
-            ->getRepository('KunstmaanNodeBundle:NodeVersion')
-            ->getNodeVersionFor($hasNode);
+		/* @var NodeVersion $nodeVersion */
+		$nodeVersion = $this->getEntityManager()->getRepository(
+				'KunstmaanNodeBundle:NodeVersion'
+			)->getNodeVersionFor(
+				$hasNode
+			);
 
-        if (!is_null($nodeVersion)) {
+        if ($nodeVersion instanceof NodeTranslation) {
             return $nodeVersion->getNodeTranslation();
         }
 
         return null;
     }
 
-    /**
-     * Get the node translation for a given slug string
-     *
-     * @param string $slug The slug
-     * @param NodeTranslation|null $parentNode The parentnode
-     *
-     * @return NodeTranslation|null
-     */
+	/**
+	 * Get the node translation for a given slug string
+	 *
+	 * @param string $slug The slug
+	 * @param NodeTranslation|null $parentNode The parentnode
+	 *
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 *
+	 * @return NodeTranslation|null
+	 */
     public function getNodeTranslationForSlug(
         $slug,
         NodeTranslation $parentNode = null
@@ -210,22 +216,26 @@ class NodeTranslationRepository extends EntityRepository
         }
 
         $slugParts = explode('/', $slug);
-        $result = $parentNode;
-        foreach ($slugParts as $slugPart) {
-            $result = $this->getNodeTranslationForSlugPart($result, $slugPart);
+
+        if(!empty($slugParts)) {
+			$slugPart = end($slugParts);
+
+            return $this->getNodeTranslationForSlugPart($parentNode, $slugPart);
         }
 
-        return $result;
+        return $parentNode;
     }
 
-    /**
-     * Returns the node translation for a given slug
-     *
-     * @param NodeTranslation|null $parentNode The parentNode
-     * @param string $slugPart The slug part
-     *
-     * @return NodeTranslation|null
-     */
+	/**
+	 * Returns the node translation for a given slug
+	 *
+	 * @param NodeTranslation|null $parentNode The parentNode
+	 * @param string $slugPart The slug part
+	 *
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 *
+	 * @return NodeTranslation|null
+	 */
     private function getNodeTranslationForSlugPart(
         NodeTranslation $parentNode = null,
         $slugPart = ''
@@ -241,8 +251,11 @@ class NodeTranslationRepository extends EntityRepository
                 't.publicNodeVersion = v.id'
             )
             ->where('n.deleted != 1')
+			->andWhere('t.lang = :lang')
             ->setFirstResult(0)
-            ->setMaxResults(1);
+            ->setMaxResults(1)
+			->setParameter('lang', \Locale::getDefault())
+		;
 
         if ($parentNode !== null) {
             $qb->andWhere('t.slug = :slug')

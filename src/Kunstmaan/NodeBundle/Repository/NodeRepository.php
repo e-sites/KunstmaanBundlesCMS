@@ -125,10 +125,12 @@ class NodeRepository extends NestedTreeRepository
 		)->getNodeVersionFor(
 			$hasNode
 		);
-		if (!is_null($nodeVersion)) {
+
+		if ($nodeVersion instanceof NodeVersion) {
 			/* @var NodeTranslation $nodeTranslation */
 			$nodeTranslation = $nodeVersion->getNodeTranslation();
-			if (!is_null($nodeTranslation)) {
+
+			if ($nodeTranslation instanceof NodeTranslation) {
 				return $nodeTranslation->getNode();
 			}
 		}
@@ -151,8 +153,13 @@ class NodeRepository extends NestedTreeRepository
 			'KunstmaanNodeBundle:NodeVersion'
 		)->getNodeVersionForIdAndEntityname($id, $entityName);
 
-		if ($nodeVersion) {
-			return $nodeVersion->getNodeTranslation()->getNode();
+		if ($nodeVersion instanceof NodeVersion) {
+			/* @var NodeTranslation $nodeTranslation */
+			$nodeTranslation = $nodeVersion->getNodeTranslation();
+
+			if ($nodeTranslation instanceof NodeTranslation) {
+				return $nodeTranslation->getNode();
+			}
 		}
 
 		return null;
