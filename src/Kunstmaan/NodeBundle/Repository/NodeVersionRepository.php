@@ -15,20 +15,36 @@ use Kunstmaan\UtilitiesBundle\Helper\ClassLookup;
  */
 class NodeVersionRepository extends EntityRepository
 {
-    /**
-     * @param HasNodeInterface $hasNode
-     *
-     * @return NodeVersion
-     */
-    public function getNodeVersionFor(HasNodeInterface $hasNode)
-    {
-        return $this->findOneBy(
-            array(
-                'refId'         => $hasNode->getId(),
-                'refEntityName' => ClassLookup::getClass($hasNode)
-            )
-        );
-    }
+	/**
+	 * @param HasNodeInterface $hasNode
+	 * @return NodeVersion|null
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 */
+	public function getNodeVersionFor(HasNodeInterface $hasNode)
+	{
+		return $this->getNodeVersionForIdAndEntityname($hasNode->getId(), ClassLookup::getClass($hasNode));
+	}
+
+	/**
+	 * @param $id
+	 * @param $entityName
+	 * @return NodeVersion|null
+	 * @throws \Doctrine\ORM\NonUniqueResultException
+	 */
+	public function getNodeVersionForIdAndEntityname($id, $entityName) {
+		return $this->createQueryBuilder('node_version')
+			->join('node_version.nodeTranslation', 'node_translation')
+			->where('node_version.refId = :refId')
+			->andWhere('node_version.refEntityName = :refEntityName')
+			->andWhere('node_translation.lang = :lang')
+			->setParameter('refId', $id)
+			->setParameter('refEntityName', $entityName)
+			->setParameter('lang', \Locale::getDefault())
+			->setMaxResults(1)
+			->getQuery()
+			->getOneOrNullResult()
+		;
+	}
 
     /**
      * @param HasNodeInterface $hasNode         The object
