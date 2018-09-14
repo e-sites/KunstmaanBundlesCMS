@@ -551,9 +551,12 @@ abstract class AdminListController extends Controller
 	 * @return string
 	 */
 	protected function getAdminListRepositoryName(AbstractAdminListConfigurator $configurator) {
-		if(class_implements($configurator->getRepositoryName(),HasNodeInterface::class)) {
-			return NodeTranslation::class;
-		}
+        $em = $this->getEntityManager();
+        $className = $em->getClassMetadata($configurator->getRepositoryName())->getName();
+
+        if(class_implements($className,HasNodeInterface::class)) {
+            return NodeTranslation::class;
+        }
 
 		return $configurator->getRepositoryName();
 	}
