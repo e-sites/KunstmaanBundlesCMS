@@ -15,7 +15,7 @@ class SettingsController extends BaseSettingsController
      * Index page for the settings
      *
      * @Route("/", name="KunstmaanAdminBundle_settings")
-     * @Template()
+     * @Template("KunstmaanAdminBundle:Settings:index.html.twig")
      *
      * @throws AccessDeniedException
      *
