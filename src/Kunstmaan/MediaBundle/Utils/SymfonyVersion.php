@@ -14,7 +14,7 @@ class SymfonyVersion
      */
     public static function getRootWebPath()
     {
-        return sprintf('%%kernel.project_dir%%/%s', self::isKernelLessThan(4) ? 'web' : 'public');
+        return sprintf('%%kernel.root_dir%%/../%s', self::isKernelLessThan(4) ? 'web' : 'public');
     }
 
     /**
