@@ -26,6 +26,8 @@ final class ElasticSearchUtil
 
         $info = self::getESVersionInfo($hosts);
 
+        var_dump('VERSION', $info);
+
         if (null !== $info) {
             $versionParts = explode('.', $info['version']['number']);
             $majorVersion = $versionParts[0];
