@@ -166,7 +166,7 @@ class SearchService
         // Retrieve the search parameters
         $queryString = trim($request->query->get('query'));
         $queryType = $request->query->get('type');
-        $lang = $request->getLocale();
+        $lang = strtolower($request->getLocale());
 
         $context['q_query'] = $queryString;
         $context['q_type'] = $queryType;
