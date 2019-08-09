@@ -3,12 +3,12 @@
 namespace Kunstmaan\NodeSearchBundle\Helper;
 
 /**
- * Implement this interface to define a custom Twig search block for your entity.
+ * Implement this interface to define custom Twig search blocks for your entity.
  */
 interface SearchBlockInterface
 {
     /**
-     * @return string
+     * @return array
      */
-    public function getSearchBlock();
+    public function getSearchBlocks();
 }

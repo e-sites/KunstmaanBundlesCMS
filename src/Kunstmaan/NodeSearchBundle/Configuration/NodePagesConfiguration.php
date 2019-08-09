@@ -605,8 +605,10 @@ class NodePagesConfiguration implements SearchConfigurationInterface
 
         if ($page instanceof SlugActionInterface) {
             $request->attributes->set('_controller', $page->getControllerAction());
+            $request->attributes->set('_route', 'kunstmaan_dashboard');
+            $request->attributes->set('_route_params', []);
             $slugController = $this->container->get('kunstmaan_node.slug.slug_controller');
-            $data = $slugController->slugAction($request);
+            $data = $slugController->slugAction($request, $nodeTranslation->getUrl(), false, false);
         }
 
         $controller = $this->resolver->getController($request);
@@ -626,16 +628,20 @@ class NodePagesConfiguration implements SearchConfigurationInterface
             return null;
         }
 
+        $content = '';
+
         try {
             $view = $renderer->load($template->getTemplate());
-            $block = $view->renderBlock($page->getSearchBlock(), $data);
+            foreach($page->getSearchBlocks() as $searchBlock) {
+                $content .= $view->renderBlock($searchBlock, $data);
+            }
         } catch(\Exception $exception) {
             return null;
         } catch(\Throwable $exception) {
             return null;
         }
 
-        return $this->removeHtml($block);
+        return $this->removeHtml($content);
     }
 
     /**
