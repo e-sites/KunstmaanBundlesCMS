@@ -8,7 +8,7 @@ namespace Kunstmaan\NodeSearchBundle\Helper;
 interface SearchBlockInterface
 {
     /**
-     * @return string
+     * @return array
      */
-    public function getSearchBlock();
+    public function getSearchBlocks();
 }

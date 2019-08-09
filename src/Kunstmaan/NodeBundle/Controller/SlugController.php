@@ -14,8 +14,6 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
  * This controller is for showing frontend pages based on slugs
@@ -26,15 +24,13 @@ class SlugController extends Controller
      * Handle the page requests
      *
      * @param Request $request The request
-     * @param string  $url     The url
-     * @param bool    $preview Show in preview mode
-     *
-     * @throws NotFoundHttpException
-     * @throws AccessDeniedException
+     * @param string $url The url
+     * @param bool $preview Show in preview mode
+     * @param bool $dispatchSecurityEvent
      *
      * @return Response|array
      */
-    public function slugAction(Request $request, $url = null, $preview = false)
+    public function slugAction(Request $request, $url = null, $preview = false, $dispatchSecurityEvent = true)
     {
         /* @var EntityManager $em */
         $em = $this->getDoctrine()->getManager();
@@ -56,20 +52,23 @@ class SlugController extends Controller
         );
         $node = $nodeTranslation->getNode();
 
-        $securityEvent = new SlugSecurityEvent();
-        $securityEvent
-            ->setNode($node)
-            ->setEntity($entity)
-            ->setRequest($request)
-            ->setNodeTranslation($nodeTranslation);
-
         $nodeMenu = $this->container->get('kunstmaan_node.node_menu');
         $nodeMenu->setLocale($locale);
         $nodeMenu->setCurrentNode($node);
         $nodeMenu->setIncludeOffline($preview);
 
         $eventDispatcher = $this->get('event_dispatcher');
-        $eventDispatcher->dispatch(Events::SLUG_SECURITY, $securityEvent);
+
+        if($dispatchSecurityEvent) {
+            $securityEvent = new SlugSecurityEvent();
+            $securityEvent
+                ->setNode($node)
+                ->setEntity($entity)
+                ->setRequest($request)
+                ->setNodeTranslation($nodeTranslation);
+
+            $eventDispatcher->dispatch(Events::SLUG_SECURITY, $securityEvent);
+        }
 
         //render page
         $renderContext = new RenderContext(
