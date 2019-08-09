@@ -189,6 +189,13 @@ services:
         tags:
             - { name: twig.extension }
 
+    kunstmaan_node.slug.slug_controller:
+        class: Kunstmaan\NodeBundle\Controller\SlugController
+        tags:
+            - { name: controller.service_arguments' }
+        calls:
+            - [ setContainer, ["@service_container"] ]
+
     kunstmaan_node.helper.url:
         class: "%kunstmaan_node.helper.url.class%"
         arguments:

@@ -40,7 +40,7 @@ services:
 
     kunstmaan_node_search.search_configuration.node:
         class: "%kunstmaan_node_search.search_configuration.node.class%"
-        arguments: ['@service_container', '@kunstmaan_search.search', '%kunstmaan_node_search.indexname%', '%kunstmaan_node_search.indextype%', '%kunstmaan_node_search.search_configuration.number_of_shards%', '%kunstmaan_node_search.search_configuration.number_of_replicas%']
+        arguments: ['@service_container', '@controller_resolver', '@kunstmaan_search.search', '%kunstmaan_node_search.indexname%', '%kunstmaan_node_search.indextype%', '%kunstmaan_node_search.search_configuration.number_of_shards%', '%kunstmaan_node_search.search_configuration.number_of_replicas%']
         calls:
             - [ setAclProvider, ['@security.acl.provider']]
             - [ setIndexablePagePartsService, ['@kunstmaan_node_search.service.indexable_pageparts']]

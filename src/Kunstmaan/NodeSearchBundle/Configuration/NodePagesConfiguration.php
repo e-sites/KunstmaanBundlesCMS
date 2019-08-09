@@ -7,6 +7,7 @@ use Elastica\Index;
 use Elastica\Type\Mapping;
 use Kunstmaan\AdminBundle\Helper\DomainConfigurationInterface;
 use Kunstmaan\AdminBundle\Helper\Security\Acl\Permission\MaskBuilder;
+use Kunstmaan\NodeBundle\Controller\SlugActionInterface;
 use Kunstmaan\NodeBundle\Entity\HasNodeInterface;
 use Kunstmaan\NodeBundle\Entity\Node;
 use Kunstmaan\NodeBundle\Entity\NodeTranslation;
@@ -15,6 +16,7 @@ use Kunstmaan\NodeBundle\Entity\PageInterface;
 use Kunstmaan\NodeBundle\Helper\RenderContext;
 use Kunstmaan\NodeSearchBundle\Event\IndexNodeEvent;
 use Kunstmaan\NodeSearchBundle\Helper\IndexablePagePartsService;
+use Kunstmaan\NodeSearchBundle\Helper\SearchBlockInterface;
 use Kunstmaan\NodeSearchBundle\Helper\SearchViewTemplateInterface;
 use Kunstmaan\PagePartBundle\Helper\HasPagePartsInterface;
 use Kunstmaan\SearchBundle\Configuration\SearchConfigurationInterface;
@@ -22,9 +24,12 @@ use Kunstmaan\SearchBundle\Provider\SearchProviderInterface;
 use Kunstmaan\SearchBundle\Search\AnalysisFactoryInterface;
 use Kunstmaan\UtilitiesBundle\Helper\ClassLookup;
 use Psr\Log\LoggerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 use Symfony\Component\Security\Acl\Domain\ObjectIdentity;
 use Symfony\Component\Security\Acl\Domain\RoleSecurityIdentity;
 use Symfony\Component\Security\Acl\Exception\AclNotFoundException;
@@ -32,6 +37,7 @@ use Symfony\Component\Security\Acl\Model\AclInterface;
 use Symfony\Component\Security\Acl\Model\AclProviderInterface;
 use Symfony\Component\Security\Acl\Model\AuditableEntryInterface;
 use Symfony\Component\Templating\EngineInterface;
+use Twig\Environment;
 
 class NodePagesConfiguration implements SearchConfigurationInterface
 {
@@ -86,13 +92,19 @@ class NodePagesConfiguration implements SearchConfigurationInterface
     /** @var array */
     protected $nodeRefs = [];
 
+    /** @var ControllerResolverInterface */
+    protected $resolver;
+
     /**
-     * @param ContainerInterface      $container
+     * @param ContainerInterface $container
+     * @param ControllerResolverInterface $resolver
      * @param SearchProviderInterface $searchProvider
-     * @param string                  $name
-     * @param string                  $type
+     * @param string $name
+     * @param string $type
+     * @param int $numberOfShards
+     * @param int $numberOfReplicas
      */
-    public function __construct($container, $searchProvider, $name, $type, $numberOfShards = 1, $numberOfReplicas = 0)
+    public function __construct($container, $resolver, $searchProvider, $name, $type, $numberOfShards = 1, $numberOfReplicas = 0)
     {
         $this->container = $container;
         $this->indexName = $name;
@@ -104,6 +116,7 @@ class NodePagesConfiguration implements SearchConfigurationInterface
         $this->em = $this->container->get('doctrine')->getManager();
         $this->numberOfShards = $numberOfShards;
         $this->numberOfReplicas = $numberOfReplicas;
+        $this->resolver = $resolver;
     }
 
     /**
@@ -472,9 +485,9 @@ class NodePagesConfiguration implements SearchConfigurationInterface
      * @param object $page
      * @param array  $doc
      *
-     * @return array
+     * @return void
      */
-    protected function addSearchType($page, &$doc)
+    protected function addSearchType($page, array &$doc)
     {
         $doc['type'] = $this->container->get('kunstmaan_node.pages_configuration')->getSearchType($page);
     }
@@ -485,9 +498,9 @@ class NodePagesConfiguration implements SearchConfigurationInterface
      * @param Node  $node
      * @param array $doc
      *
-     * @return array
+     * @return void
      */
-    protected function addParentAndAncestors($node, &$doc)
+    protected function addParentAndAncestors($node, array &$doc)
     {
         $parent = $node->getParent();
 
@@ -518,27 +531,32 @@ class NodePagesConfiguration implements SearchConfigurationInterface
                     'Indexing page "%s" / lang : %s / type : %s / id : %d / node id : %d',
                     $page->getTitle(),
                     $nodeTranslation->getLang(),
-                    \get_class($page),
+                    get_class($page),
                     $page->getId(),
                     $nodeTranslation->getNode()->getId()
                 )
             );
         }
 
-        $renderer = $this->container->get('templating');
+        $renderer = $this->container->get('twig');
+
         $doc['content'] = '';
 
-        if ($page instanceof SearchViewTemplateInterface) {
-            $doc['content'] = $this->renderCustomSearchView($nodeTranslation, $page, $renderer);
+        $content = null;
 
-            return null;
+        if ($page instanceof SearchBlockInterface) {
+            $content = $this->renderCustomSearchBlock($nodeTranslation, $page, $renderer);
         }
 
-        if ($page instanceof HasPagePartsInterface) {
-            $doc['content'] = $this->renderDefaultSearchView($nodeTranslation, $page, $renderer);
-
-            return null;
+        if ($content === null && $page instanceof SearchViewTemplateInterface) {
+            $content = $this->renderCustomSearchView($nodeTranslation, $page, $renderer);
         }
+
+        if ($content === null && $page instanceof HasPagePartsInterface) {
+            $content = $this->renderDefaultSearchView($nodeTranslation, $page, $renderer);
+        }
+
+        $doc['content'] = $content;
     }
 
     /**
@@ -568,16 +586,71 @@ class NodePagesConfiguration implements SearchConfigurationInterface
     /**
      * Render a custom search view
      *
+     * @param NodeTranslation $nodeTranslation
+     * @param SearchBlockInterface $page
+     * @param Environment $renderer
+     *
+     * @return string|null
+     */
+    protected function renderCustomSearchBlock(
+        NodeTranslation $nodeTranslation,
+        SearchBlockInterface $page,
+        Environment $renderer
+    ) {
+        $request = $this->container->get('request_stack')->getCurrentRequest();
+        $request->attributes->set('_nodeTranslation', $nodeTranslation);
+        $request->attributes->set('_entity', $page);
+
+        $data = [];
+
+        if ($page instanceof SlugActionInterface) {
+            $request->attributes->set('_controller', $page->getControllerAction());
+            $slugController = $this->container->get('kunstmaan_node.slug.slug_controller');
+            $data = $slugController->slugAction($request);
+        }
+
+        $controller = $this->resolver->getController($request);
+        $extraData = $controller($request);
+
+        if ($extraData instanceof Response) {
+            return null;
+        }
+
+        if (is_array($extraData)) {
+            $data += $extraData;
+        }
+
+        $template = $request->attributes->get('_template');
+
+        if (!$template instanceof Template) {
+            return null;
+        }
+
+        try {
+            $view = $renderer->load($template->getTemplate());
+            $block = $view->renderBlock($page->getSearchBlock(), $data);
+        } catch(\Exception $exception) {
+            return null;
+        } catch(\Throwable $exception) {
+            return null;
+        }
+
+        return $this->removeHtml($block);
+    }
+
+    /**
+     * Render a custom search view
+     *
      * @param NodeTranslation             $nodeTranslation
      * @param SearchViewTemplateInterface $page
-     * @param EngineInterface             $renderer
+     * @param Environment                 $renderer
      *
      * @return string
      */
     protected function renderCustomSearchView(
         NodeTranslation $nodeTranslation,
         SearchViewTemplateInterface $page,
-        EngineInterface $renderer
+        Environment $renderer
     ) {
         $view = $page->getSearchView();
         $renderContext = new RenderContext([
@@ -592,12 +665,18 @@ class NodePagesConfiguration implements SearchConfigurationInterface
             $page->service($this->container, $request, $renderContext);
         }
 
-        $content = $this->removeHtml(
-            $renderer->render(
-                $view,
-                $renderContext->getArrayCopy()
-            )
-        );
+        try {
+            $content = $this->removeHtml(
+                $renderer->render(
+                    $view,
+                    $renderContext->getArrayCopy()
+                )
+            );
+        } catch(\Exception $exception) {
+            return null;
+        } catch(\Throwable $exception) {
+            return null;
+        }
 
         return $content;
     }
@@ -606,30 +685,37 @@ class NodePagesConfiguration implements SearchConfigurationInterface
      * Render default search view (all indexable pageparts in the main context
      * of the page)
      *
-     * @param NodeTranslation       $nodeTranslation
+     * @param NodeTranslation $nodeTranslation
      * @param HasPagePartsInterface $page
-     * @param EngineInterface       $renderer
+     * @param Environment $renderer
      *
      * @return string
      */
     protected function renderDefaultSearchView(
         NodeTranslation $nodeTranslation,
         HasPagePartsInterface $page,
-        EngineInterface $renderer
+        Environment $renderer
     ) {
         $pageparts = $this->indexablePagePartsService->getIndexablePageParts($page);
         $view = 'KunstmaanNodeSearchBundle:PagePart:view.html.twig';
-        $content = $this->removeHtml(
-            $renderer->render(
-                $view,
-                array(
-                    'locale' => $nodeTranslation->getLang(),
-                    'page' => $page,
-                    'pageparts' => $pageparts,
-                    'indexMode' => true,
+
+        try {
+            $content = $this->removeHtml(
+                $renderer->render(
+                    $view,
+                    [
+                        'locale' => $nodeTranslation->getLang(),
+                        'page' => $page,
+                        'pageparts' => $pageparts,
+                        'indexMode' => true,
+                    ]
                 )
-            )
-        );
+            );
+        } catch(\Exception $exception) {
+            return null;
+        } catch(\Throwable $exception) {
+            return null;
+        }
 
         return $content;
     }
