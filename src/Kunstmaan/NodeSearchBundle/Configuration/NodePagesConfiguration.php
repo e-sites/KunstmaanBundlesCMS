@@ -606,8 +606,10 @@ class NodePagesConfiguration implements SearchConfigurationInterface
 
         if ($page instanceof SlugActionInterface) {
             $request->attributes->set('_controller', $page->getControllerAction());
-            $request->attributes->set('_route', 'kunstmaan_dashboard');
-            $request->attributes->set('_route_params', []);
+            $request->attributes->set('_route', '_slug');
+            $request->attributes->set('_route_params', [
+                'url' => $nodeTranslation->getUrl()
+            ]);
 
             $slugController = $this->container->get('kunstmaan_node.slug.slug_controller');
             $data = $slugController->slugAction($request, null, false, false);
