@@ -18,82 +18,88 @@
             <div class="app__content__header__extra-actions">
                 <div class="btn-group">
                     {% if adminlist.canAdd() %}
-                        {% if adminlist.getIndexUrl()['params'] is defined %}
-                            {% set adminaddlist = adminlist.getAddUrlFor(adminlist.getIndexUrl()['params']) %}
-                        {% else %}
-                            {% set adminaddlist = adminlist.getAddUrlFor(adminlist.getIndexUrl()) %}
-                        {% endif %}
+                        {% block add_action %}
+                            {% if adminlist.getIndexUrl()['params'] is defined %}
+                                {% set adminaddlist = adminlist.getAddUrlFor(adminlist.getIndexUrl()['params']) %}
+                            {% else %}
+                                {% set adminaddlist = adminlist.getAddUrlFor(adminlist.getIndexUrl()) %}
+                            {% endif %}
 
-                        {% if adminaddlist|length > 1 %}
-                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                                {{ 'form.add' | trans }}
+                            {% if adminaddlist|length > 1 %}
+                                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                                    {{ 'form.add' | trans }}
+                                    <i class="fa fa-caret-down btn__icon"></i>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-right">
+                                    {% for key,add in adminaddlist %}
+                                        <li>
+                                            <a href="{{ path(add["path"], add[("params")]) }}">
+                                                {{ key }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                {% for key,add in adminaddlist %}
+                                    <a class="btn btn-primary btn--raise-on-hover" href="{{ path(add["path"], add[("params")]) }}">
+                                        {{ 'form.add.%subject%' | trans({ '%subject%': key|trans }) }}
+                                    </a>
+                                {% endfor %}
+                            {% endif %}
+                        {% endblock %}
+                    {% endif %}
+                </div>
+
+                {% block export_action %}
+                    {% if adminlist.canExport() %}
+                        <div class="btn-group dropdown">
+                            <a class="btn btn-default btn--raise-on-hover dropdown-toggle" data-toggle="dropdown" href="#">
+                                {{ 'kuma_admin_list.form.export_to' | trans }}
                                 <i class="fa fa-caret-down btn__icon"></i>
                             </a>
+
                             <ul class="dropdown-menu dropdown-menu-right">
-                                {% for key,add in adminaddlist %}
+                                {% set exportparams = adminlist.filterbuilder.currentparameters|merge(adminlist.getExportUrl()[("params")]) %}
+                                {% for name, ext in supported_export_extensions() %}
+                                    {% set exportparams = exportparams|merge({"_format": ext}) %}
+                                    {% if (name | lower == 'csv') %}
+                                        {% set icon = 'fa-file-code' %}
+                                    {% elseif (name | lower == 'excel') %}
+                                        {% set icon = 'fa-file-excel' %}
+                                    {% else %}
+                                        {% set icon = 'fa-file' %}
+                                    {% endif %}
                                     <li>
-                                        <a href="{{ path(add["path"], add[("params")]) }}">
-                                            {{ key }}
+                                        <a href="{{ path(adminlist.getExportUrl()["path"], exportparams) }}">
+                                            <i class="fa {{ icon }} btn__icon"></i> {{ name }}
                                         </a>
                                     </li>
                                 {% endfor %}
                             </ul>
-                        {% else %}
-                            {% for key,add in adminaddlist %}
-                                <a class="btn btn-primary btn--raise-on-hover" href="{{ path(add["path"], add[("params")]) }}">
-                                    {{ 'form.add.%subject%' | trans({ '%subject%': key|trans }) }}
-                                </a>
-                            {% endfor %}
-                        {% endif %}
+                        </div>
                     {% endif %}
-                </div>
+                {% endblock %}
 
-                {% if adminlist.canExport() %}
-                    <div class="btn-group dropdown">
-                        <a class="btn btn-default btn--raise-on-hover dropdown-toggle" data-toggle="dropdown" href="#">
-                            {{ 'kuma_admin_list.form.export_to' | trans }}
-                            <i class="fa fa-caret-down btn__icon"></i>
-                        </a>
-
-                        <ul class="dropdown-menu dropdown-menu-right">
-                            {% set exportparams = adminlist.filterbuilder.currentparameters|merge(adminlist.getExportUrl()[("params")]) %}
-                            {% for name, ext in supported_export_extensions() %}
-                                {% set exportparams = exportparams|merge({"_format": ext}) %}
-                                {% if (name | lower == 'csv') %}
-                                    {% set icon = 'fa-file-code' %}
-                                {% elseif (name | lower == 'excel') %}
-                                    {% set icon = 'fa-file-excel' %}
-                                {% else %}
-                                    {% set icon = 'fa-file' %}
-                                {% endif %}
-                                <li>
-                                    <a href="{{ path(adminlist.getExportUrl()["path"], exportparams) }}">
-                                        <i class="fa {{ icon }} btn__icon"></i> {{ name }}
+                {% block list_actions %}
+                    {% if adminlist.hasListActions() %}
+                        {% for action in adminlist.getListActions() %}
+                            {% if action.template is not null %}
+                                {% include action.template with {'action': action} %}
+                            {% else %}
+                                <div class="btn-group">
+                                    <a href="{{ path(action.getUrl()["path"], action.getUrl()[("params")] ) }}" class="btn">
+                                        {% if action.getIcon() is not null %}
+                                            <i class="fa fa-{{ action.getIcon() }}"></i>
+                                            {{ action.getLabel()|trans }}
+                                        {% else %}
+                                            {{ action.getLabel()|trans }}
+                                        {% endif %}
                                     </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-
-                {% if adminlist.hasListActions() %}
-                    {% for action in adminlist.getListActions() %}
-                        {% if action.template is not null %}
-                            {% include action.template with {'action': action} %}
-                        {% else %}
-                            <div class="btn-group">
-                                <a href="{{ path(action.getUrl()["path"], action.getUrl()[("params")] ) }}" class="btn">
-                                    {% if action.getIcon() is not null %}
-                                        <i class="fa fa-{{ action.getIcon() }}"></i>
-                                        {{ action.getLabel()|trans }}
-                                    {% else %}
-                                        {{ action.getLabel()|trans }}
-                                    {% endif %}
-                                </a>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endblock %}
             </div>
         </div>
     {% endif %}
