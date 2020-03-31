@@ -1,0 +1,11 @@
+scheb_two_factor:
+    email:
+        enabled: true
+        sender_email: '%medicplanner_no_reply_email%'
+        sender_name: '%mailer_from_name%'
+        template: '@EsitesUser/Security/2fa.html.twig'
+        mailer: 'Esites\UserBundle\Services\AuthenticationMailer'
+        digits: 6
+    trusted_device:
+        enabled: false
+        cookie_secure: true

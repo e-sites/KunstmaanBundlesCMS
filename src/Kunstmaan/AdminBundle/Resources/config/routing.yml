@@ -41,6 +41,19 @@ fos_user_change_password:
 ##########################
 ## Google OAuth Sign In ##
 ##########################
+
 KunstmaanAdminBundle_oauth_signin:
     path: /%kunstmaan_admin.admin_prefix%/google_signin_check
     defaults: { _controller: KunstmaanAdminBundle:OAuth:check }
+
+###############################
+## Two factor authentication ##
+###############################
+
+two_factor_security_login:
+    path: /%kunstmaan_admin.admin_prefix%/two-factor-authentication
+    defaults:
+        _controller: "scheb_two_factor.form_controller:form"
+
+two_factor_security_check:
+    path: '%tfa_admin_login_check_path%'
