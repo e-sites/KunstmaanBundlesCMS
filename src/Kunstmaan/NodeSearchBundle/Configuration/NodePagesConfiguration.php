@@ -267,7 +267,7 @@ class NodePagesConfiguration implements SearchConfigurationInterface
     {
         // Retrieve the public NodeVersion
         $publicNodeVersion = $nodeTranslation->getPublicNodeVersion();
-        if (\is_null($publicNodeVersion)) {
+        if (!$publicNodeVersion instanceof NodeVersion) {
             return false;
         }
 
@@ -282,15 +282,23 @@ class NodePagesConfiguration implements SearchConfigurationInterface
         }
 
         $node = $nodeTranslation->getNode();
-        if ($this->isIndexable($refPage)) {
-            // Retrieve the referenced entity from the public NodeVersion
-            $page = $publicNodeVersion->getRef($this->em);
 
-            $this->addPageToIndex($nodeTranslation, $node, $publicNodeVersion, $page);
-            if ($add) {
-                $this->searchProvider->addDocuments($this->documents);
-                $this->documents = [];
-            }
+        if (!$this->isIndexable($refPage)) {
+            return true;
+        }
+
+        // Retrieve the referenced entity from the public NodeVersion
+        $page = $publicNodeVersion->getRef($this->em);
+
+        if (!$page instanceof HasNodeInterface) {
+            return true;
+        }
+
+        $this->addPageToIndex($nodeTranslation, $node, $publicNodeVersion, $page);
+
+        if ($add) {
+            $this->searchProvider->addDocuments($this->documents);
+            $this->documents = [];
         }
 
         return true; // return true even if the page itself should not be indexed. This makes sure its children are being processed (i.e. structured nodes)
