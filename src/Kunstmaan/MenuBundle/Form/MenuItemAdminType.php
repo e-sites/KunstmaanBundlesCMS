@@ -48,7 +48,7 @@ class MenuItemAdminType extends AbstractType
                 'expanded' => false,
                 'required' => false,
                 'label' => 'kuma_menu.form.parent',
-                'placeholder' => 'kuma_menu.form.parent_placeholder',
+                'placeholder' => 'kuma_menu.form.no_parent',
             ]
         );
         $builder->add(

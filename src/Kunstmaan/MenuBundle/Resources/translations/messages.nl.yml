@@ -28,6 +28,7 @@ kuma_menu:
   form:
     parent: Bovenliggend menu-item
     parent_placeholder: Selecteer het bovenliggende menu-item...
+    no_parent: Geen bovenliggende menu-item
     type: Type
     node_translation: Pagina koppelen
     node_translation_placeholder: Selecteer een pagina om naar de verwijzen...
