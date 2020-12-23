@@ -54,12 +54,12 @@ class MenuItemAdminType extends AbstractType
                 },
                 'attr' => array(
                     'class' => 'js-advanced-select',
-                    'placeholder' => 'kuma_menu.form.parent_placeholder',
                 ),
                 'multiple' => false,
                 'expanded' => false,
                 'required' => false,
                 'label' => 'kuma_menu.form.parent',
+                'placeholder' => 'kuma_menu.form.no_parent',
             )
         );
         $builder->add(
