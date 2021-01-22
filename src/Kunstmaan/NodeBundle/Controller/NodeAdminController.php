@@ -390,7 +390,7 @@ class NodeAdminController extends Controller
 
     /**
      * @Route(
-     *      "/{id}/unschedulepublish",
+     *      "/{id}/unscheduleunpublish",
      *      requirements={"id" = "\d+"},
      *      name="KunstmaanNodeBundle_nodes_unschedule_unpublish",
      *      methods={"GET", "POST"}
