@@ -172,7 +172,20 @@ class ActionsMenuBuilder
 
         $activeNodeTranslation = $activeNodeVersion->getNodeTranslation();
         $node = $activeNodeTranslation->getNode();
-        $queuedNodeTranslationAction = $this->em->getRepository(QueuedNodeTranslationAction::class)->findOneBy(['nodeTranslation' => $activeNodeTranslation]);
+
+        $entityRepository = $this->em->getRepository(QueuedNodeTranslationAction::class);
+        $hasQueuedNodeTranslationPublishAction = $entityRepository->count(
+            [
+                'nodeTranslation' => $activeNodeTranslation,
+                'action' => QueuedNodeTranslationAction::ACTION_PUBLISH
+            ]
+        );
+        $hasQueuedNodeTranslationUnpublishAction = $entityRepository->count(
+            [
+                'nodeTranslation' => $activeNodeTranslation,
+                'action' => QueuedNodeTranslationAction::ACTION_UNPUBLISH
+            ]
+        );
 
         $isFirst = true;
         $canEdit = $this->authorizationChecker->isGranted(PermissionMap::PERMISSION_EDIT, $node);
@@ -239,7 +252,7 @@ class ActionsMenuBuilder
                 ]
             );
 
-            if (empty($queuedNodeTranslationAction) && $canPublish) {
+            if (!$hasQueuedNodeTranslationPublishAction && $canPublish) {
                 $menu->addChild(
                     'action.publish',
                     [
@@ -283,7 +296,7 @@ class ActionsMenuBuilder
                     ]
                 );
 
-                if (empty($queuedNodeTranslationAction)
+                if (!$hasQueuedNodeTranslationUnpublishAction
                     && $activeNodeTranslation->isOnline()
                     && $this->authorizationChecker->isGranted(
                         PermissionMap::PERMISSION_UNPUBLISH,
@@ -301,7 +314,7 @@ class ActionsMenuBuilder
                             ],
                         ]
                     );
-                } elseif (empty($queuedNodeTranslationAction)
+                } elseif (!$hasQueuedNodeTranslationPublishAction
                     && !$activeNodeTranslation->isOnline()
                     && $canPublish
                 ) {

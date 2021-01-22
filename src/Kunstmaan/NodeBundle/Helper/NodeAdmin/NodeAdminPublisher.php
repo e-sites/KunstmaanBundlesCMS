@@ -174,7 +174,7 @@ class NodeAdminPublisher
         $this->em->flush();
 
         // Remove scheduled task
-        $this->unSchedulePublish($nodeTranslation);
+        $this->unScheduleUnpublish($nodeTranslation);
 
         $this->dispatch(
             new NodeEvent($node, $nodeTranslation, $nodeVersion, $page),
@@ -196,7 +196,7 @@ class NodeAdminPublisher
         }
 
         //remove existing first
-        $this->unSchedulePublish($nodeTranslation);
+        $this->unScheduleUnpublish($nodeTranslation);
         $user = $this->tokenStorage->getToken()->getUser();
         $queuedNodeTranslationAction = new QueuedNodeTranslationAction();
         $queuedNodeTranslationAction
@@ -208,16 +208,39 @@ class NodeAdminPublisher
         $this->em->flush();
     }
 
-    /**
-     * @param NodeTranslation $nodeTranslation
-     */
-    public function unSchedulePublish(NodeTranslation $nodeTranslation)
+    public function unSchedulePublish(NodeTranslation $nodeTranslation): void
     {
         /* @var Node $node */
-        $queuedNodeTranslationAction = $this->em->getRepository(QueuedNodeTranslationAction::class)
-            ->findOneBy(array('nodeTranslation' => $nodeTranslation));
+        $queuedNodeTranslationAction = $this
+            ->em
+            ->getRepository(QueuedNodeTranslationAction::class)
+            ->findOneBy(
+                [
+                    'nodeTranslation' => $nodeTranslation,
+                    'action'          => QueuedNodeTranslationAction::ACTION_PUBLISH,
+                ]
+            );
 
-        if (!\is_null($queuedNodeTranslationAction)) {
+        if ($queuedNodeTranslationAction instanceof QueuedNodeTranslationAction) {
+            $this->em->remove($queuedNodeTranslationAction);
+            $this->em->flush();
+        }
+    }
+
+    public function unScheduleUnpublish(NodeTranslation $nodeTranslation): void
+    {
+        /* @var Node $node */
+        $queuedNodeTranslationAction = $this
+            ->em
+            ->getRepository(QueuedNodeTranslationAction::class)
+            ->findOneBy(
+                [
+                    'nodeTranslation' => $nodeTranslation,
+                    'action'          => QueuedNodeTranslationAction::ACTION_UNPUBLISH,
+                ]
+            );
+
+        if ($queuedNodeTranslationAction instanceof QueuedNodeTranslationAction) {
             $this->em->remove($queuedNodeTranslationAction);
             $this->em->flush();
         }
