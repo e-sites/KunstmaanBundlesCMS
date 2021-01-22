@@ -72,13 +72,11 @@ class NodeAdminPublisher
     }
 
     /**
-     * If there is a draft version it'll try to publish the draft first. Makse snese because if you want to publish the public version you don't publish but you save.
-     *
-     * @param BaseUser|null $user
+     * If there is a draft version it'll try to publish the draft first. Makes sense because if you want to publish the public version you don't publish but you save.
      *
      *  @throws AccessDeniedException
      */
-    public function publish(NodeTranslation $nodeTranslation, $user = null)
+    public function publish(NodeTranslation $nodeTranslation, $user = null): void
     {
         if (false === $this->authorizationChecker->isGranted(PermissionMap::PERMISSION_PUBLISH, $nodeTranslation->getNode())) {
             throw new AccessDeniedException();
@@ -123,12 +121,9 @@ class NodeAdminPublisher
     }
 
     /**
-     * @param NodeTranslation $nodeTranslation The NodeTranslation
-     * @param \DateTime       $date            The date to publish
-     *
      * @throws AccessDeniedException
      */
-    public function publishLater(NodeTranslation $nodeTranslation, \DateTime $date)
+    public function publishLater(NodeTranslation $nodeTranslation, \DateTime $date): void
     {
         $node = $nodeTranslation->getNode();
         if (false === $this->authorizationChecker->isGranted(PermissionMap::PERMISSION_PUBLISH, $node)) {
@@ -152,7 +147,7 @@ class NodeAdminPublisher
     /**
      * @throws AccessDeniedException
      */
-    public function unPublish(NodeTranslation $nodeTranslation)
+    public function unPublish(NodeTranslation $nodeTranslation): void
     {
         if (false === $this->authorizationChecker->isGranted(PermissionMap::PERMISSION_UNPUBLISH, $nodeTranslation->getNode())) {
             throw new AccessDeniedException();
@@ -171,7 +166,7 @@ class NodeAdminPublisher
         $this->em->flush();
 
         // Remove scheduled task
-        $this->unSchedulePublish($nodeTranslation);
+        $this->unScheduleUnpublish($nodeTranslation);
 
         $this->dispatch(
             new NodeEvent($node, $nodeTranslation, $nodeVersion, $page),
@@ -180,12 +175,9 @@ class NodeAdminPublisher
     }
 
     /**
-     * @param NodeTranslation $nodeTranslation The NodeTranslation
-     * @param \DateTime       $date            The date to unpublish
-     *
      * @throws AccessDeniedException
      */
-    public function unPublishLater(NodeTranslation $nodeTranslation, \DateTime $date)
+    public function unPublishLater(NodeTranslation $nodeTranslation, \DateTime $date): void
     {
         $node = $nodeTranslation->getNode();
         if (false === $this->authorizationChecker->isGranted(PermissionMap::PERMISSION_UNPUBLISH, $node)) {
@@ -193,7 +185,7 @@ class NodeAdminPublisher
         }
 
         //remove existing first
-        $this->unSchedulePublish($nodeTranslation);
+        $this->unScheduleUnpublish($nodeTranslation);
         $user = $this->tokenStorage->getToken()->getUser();
         $queuedNodeTranslationAction = new QueuedNodeTranslationAction();
         $queuedNodeTranslationAction
@@ -205,13 +197,39 @@ class NodeAdminPublisher
         $this->em->flush();
     }
 
-    public function unSchedulePublish(NodeTranslation $nodeTranslation)
+    public function unSchedulePublish(NodeTranslation $nodeTranslation): void
     {
         /* @var Node $node */
-        $queuedNodeTranslationAction = $this->em->getRepository(QueuedNodeTranslationAction::class)
-            ->findOneBy(['nodeTranslation' => $nodeTranslation]);
+        $queuedNodeTranslationAction = $this
+            ->em
+            ->getRepository(QueuedNodeTranslationAction::class)
+            ->findOneBy(
+                [
+                    'nodeTranslation' => $nodeTranslation,
+                    'action'          => QueuedNodeTranslationAction::ACTION_PUBLISH,
+                ]
+            );
 
-        if (!\is_null($queuedNodeTranslationAction)) {
+        if ($queuedNodeTranslationAction instanceof QueuedNodeTranslationAction) {
+            $this->em->remove($queuedNodeTranslationAction);
+            $this->em->flush();
+        }
+    }
+
+    public function unScheduleUnpublish(NodeTranslation $nodeTranslation): void
+    {
+        /* @var Node $node */
+        $queuedNodeTranslationAction = $this
+            ->em
+            ->getRepository(QueuedNodeTranslationAction::class)
+            ->findOneBy(
+                [
+                    'nodeTranslation' => $nodeTranslation,
+                    'action'          => QueuedNodeTranslationAction::ACTION_UNPUBLISH,
+                ]
+            );
+
+        if ($queuedNodeTranslationAction instanceof QueuedNodeTranslationAction) {
             $this->em->remove($queuedNodeTranslationAction);
             $this->em->flush();
         }
