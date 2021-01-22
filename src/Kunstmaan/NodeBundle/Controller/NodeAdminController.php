@@ -41,6 +41,7 @@ use Symfony\Component\EventDispatcher\LegacyEventDispatcherProxy;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -378,6 +379,34 @@ class NodeAdminController extends Controller
 
         $nodeTranslation = $node->getNodeTranslation($this->locale, true);
         $this->nodePublisher->unSchedulePublish($nodeTranslation);
+
+        $this->addFlash(
+            FlashTypes::SUCCESS,
+            $this->get('translator')->trans('kuma_node.admin.unschedule.flash.success')
+        );
+
+        return $this->redirect($this->generateUrl('KunstmaanNodeBundle_nodes_edit', array('id' => $id)));
+    }
+
+    /**
+     * @Route(
+     *      "/{id}/unschedulepublish",
+     *      requirements={"id" = "\d+"},
+     *      name="KunstmaanNodeBundle_nodes_unschedule_unpublish",
+     *      methods={"GET", "POST"}
+     * )
+     *
+     * @throws AccessDeniedException
+     */
+    public function unScheduleUnpublishAction(Request $request, int $id): Response
+    {
+        $this->init($request);
+
+        /* @var Node $node */
+        $node = $this->em->getRepository(Node::class)->find($id);
+
+        $nodeTranslation = $node->getNodeTranslation($this->locale, true);
+        $this->nodePublisher->unScheduleUnpublish($nodeTranslation);
 
         $this->addFlash(
             FlashTypes::SUCCESS,

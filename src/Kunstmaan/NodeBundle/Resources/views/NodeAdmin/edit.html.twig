@@ -12,15 +12,20 @@
                     |trans({'%date%': queuedNodeTranslationAction.date|date('Y-m-d H:i:s')})
                     |raw
                 }}
+
+                <a href="{{ path('KunstmaanNodeBundle_nodes_unschedule_publish', { 'id': node.id}) }}" class="btn btn-warning btn--raise-on-hover alert__action">
+                    {{ 'kuma_node.status.button.schedulle_cancel'|trans() }}
+                </a>
             {% else %}
                 {{ 'kuma_node.status.will_be_unpublish_at.%date%.raw'
                     |trans({'%date%':queuedNodeTranslationAction.date|date('Y-m-d H:i:s')})
                     |raw
                 }}
+
+                <a href="{{ path('KunstmaanNodeBundle_nodes_unschedule_unpublish', { 'id': node.id}) }}" class="btn btn-warning btn--raise-on-hover alert__action">
+                    {{ 'kuma_node.status.button.schedulle_cancel'|trans() }}
+                </a>
             {% endif %}
-            <a href="{{ path('KunstmaanNodeBundle_nodes_unschedule_publish', { 'id': node.id}) }}" class="btn btn-warning btn--raise-on-hover alert__action">
-                {{ 'kuma_node.status.button.schedulle_cancel'|trans() }}
-            </a>
         </div>
     {% endif %}
     {% if form_has_errors_recursive(form) %}
