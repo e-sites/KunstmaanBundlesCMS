@@ -69,14 +69,7 @@ class ActionsMenuBuilder
     private $showDuplicateWithChildren;
 
     /**
-     * @param FactoryInterface              $factory
-     * @param EntityManager                 $em
-     * @param RouterInterface               $router
-     * @param EventDispatcherInterface      $dispatcher
-     * @param AuthorizationCheckerInterface $authorizationChecker
-     * @param PagesConfiguration            $pagesConfiguration
-     * @param bool                          $enableExportPageTemplate
-     * @param bool                          $showDuplicateWithChildren
+     * @param bool $enableExportPageTemplate
      */
     public function __construct(
         FactoryInterface $factory,
@@ -259,7 +252,7 @@ class ActionsMenuBuilder
                         'linkAttributes' => [
                             'data-toggle' => 'modal',
                             'data-target' => '#pub',
-                            'class' => 'btn btn--raise-on-hover'.($isFirst ? ' btn-primary btn-save' : ' btn-default'),
+                            'class' => 'btn btn--raise-on-hover' . ($isFirst ? ' btn-primary btn-save' : ' btn-default'),
                         ],
                     ]
                 );
@@ -337,7 +330,7 @@ class ActionsMenuBuilder
                         [
                             'linkAttributes' => [
                                 'type' => 'submit',
-                                'class' => 'btn btn--raise-on-hover'.($isFirst ? ' btn-primary btn-save' : ' btn-default'),
+                                'class' => 'btn btn--raise-on-hover' . ($isFirst ? ' btn-primary btn-save' : ' btn-default'),
                                 'value' => 'saveasdraft',
                                 'name' => 'saveasdraft',
                             ],
@@ -519,8 +512,6 @@ class ActionsMenuBuilder
     /**
      * Set activeNodeVersion
      *
-     * @param NodeVersion $activeNodeVersion
-     *
      * @return ActionsMenuBuilder
      */
     public function setActiveNodeVersion(NodeVersion $activeNodeVersion)
@@ -550,7 +541,6 @@ class ActionsMenuBuilder
 
     /**
      * @param object $event
-     * @param string $eventName
      *
      * @return object
      */

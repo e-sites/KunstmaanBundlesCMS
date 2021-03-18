@@ -50,9 +50,6 @@ class FolderRepository extends NestedTreeRepository
         }
     }
 
-    /**
-     * @param Folder $folder
-     */
     public function delete(Folder $folder)
     {
         $em = $this->getEntityManager();
@@ -65,8 +62,7 @@ class FolderRepository extends NestedTreeRepository
     }
 
     /**
-     * @param Folder $folder
-     * @param bool   $alsoDeleteFolders
+     * @param bool $alsoDeleteFolders
      */
     public function emptyFolder(Folder $folder, $alsoDeleteFolders = false)
     {
@@ -78,9 +74,6 @@ class FolderRepository extends NestedTreeRepository
         $em->flush();
     }
 
-    /**
-     * @param Folder $folder
-     */
     private function deleteMedia(Folder $folder)
     {
         $em = $this->getEntityManager();
@@ -92,9 +85,6 @@ class FolderRepository extends NestedTreeRepository
         }
     }
 
-    /**
-     * @param Folder $folder
-     */
     private function deleteChildren(Folder $folder)
     {
         $em = $this->getEntityManager();
@@ -117,7 +107,8 @@ class FolderRepository extends NestedTreeRepository
     {
         $qb = $this->createQueryBuilder('folder')
             ->select('folder')
-            ->where('folder.parent is null AND folder.deleted != true')
+            ->where('folder.parent is null AND folder.deleted != :deleted')
+            ->setParameter('deleted', true)
             ->orderBy('folder.name');
 
         if (false === \is_null($limit)) {
@@ -146,7 +137,7 @@ class FolderRepository extends NestedTreeRepository
 
     public function getFirstTopFolder()
     {
-        $folder = $this->findOneBy(array('parent' => null));
+        $folder = $this->findOneBy(['parent' => null]);
         if (!$folder) {
             throw new EntityNotFoundException();
         }
@@ -249,7 +240,7 @@ class FolderRepository extends NestedTreeRepository
     public function getNodesHierarchyQueryBuilder(
         $node = null,
         $direct = false,
-        array $options = array(),
+        array $options = [],
         $includeNode = false
     ) {
         /** @var QueryBuilder $qb */
@@ -262,7 +253,7 @@ class FolderRepository extends NestedTreeRepository
     /**
      * {@inheritdoc}
      */
-    public function getNodesHierarchy($node = null, $direct = false, array $options = array(), $includeNode = false)
+    public function getNodesHierarchy($node = null, $direct = false, array $options = [], $includeNode = false)
     {
         $query = $this->getNodesHierarchyQuery($node, $direct, $options, $includeNode);
         $query->setHint(
@@ -285,7 +276,7 @@ class FolderRepository extends NestedTreeRepository
         $stmt = $em->getConnection()->prepare($sql);
         $stmt->execute();
 
-        $folders = $this->findBy(array(), array('parent' => 'ASC', 'name' => 'asc'));
+        $folders = $this->findBy([], ['parent' => 'ASC', 'name' => 'asc']);
 
         $rootFolder = $folders[0];
         $first = true;
@@ -336,10 +327,6 @@ class FolderRepository extends NestedTreeRepository
         return $qb;
     }
 
-    /**
-     * @param Folder $folder
-     * @param        $parent
-     */
     private function persistInOrderedTree(Folder $folder, $parent)
     {
         // Find where to insert the new item
