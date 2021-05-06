@@ -4,6 +4,7 @@ namespace Kunstmaan\MediaBundle\Validator\Constraints;
 
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -16,7 +17,7 @@ class ExtensionValidator extends ConstraintValidator
         $value,
         Constraint $constraint
     ): void {
-        if (!$value instanceof File) {
+        if (!$value instanceof UploadedFile) {
             return;
         }
 
@@ -31,12 +32,14 @@ class ExtensionValidator extends ConstraintValidator
     }
 
     private function validateExtension(
-        File $file,
+        UploadedFile $file,
         ExtensionConstraint $constraint
     ): void {
+        $extension = $this->getExtension($file);
+
         $isWhitelisted = $this->isWhitelisted(
-            $file,
-            $constraint
+            $constraint,
+            $extension
         );
 
         if (!$isWhitelisted) {
@@ -48,8 +51,8 @@ class ExtensionValidator extends ConstraintValidator
         }
 
         $isBlacklisted = $this->isBlacklisted(
-            $file,
-            $constraint
+            $constraint,
+            $extension
         );
 
         if ($isBlacklisted) {
@@ -61,9 +64,20 @@ class ExtensionValidator extends ConstraintValidator
         }
     }
 
+    private function getExtension(UploadedFile $file): string
+    {
+        $extension = $file->getClientOriginalExtension();
+
+        if (is_string($extension) && strlen($extension) > 0) {
+            return $extension;
+        }
+
+        return $file->getExtension();
+    }
+
     private function isWhitelisted(
-        File $file,
-        ExtensionConstraint $constraint
+        ExtensionConstraint $constraint,
+        string $extension
     ): bool {
         $whitelistedExtensions = $constraint->whitelistedExtensions;
 
@@ -71,16 +85,16 @@ class ExtensionValidator extends ConstraintValidator
             return true;
         }
 
-        return in_array(
-            $file->getExtension(),
+        return !in_array(
+            $extension,
             $whitelistedExtensions,
             true
         );
     }
 
     private function isBlacklisted(
-        File $file,
-        ExtensionConstraint $constraint
+        ExtensionConstraint $constraint,
+        string $extension
     ): bool {
         $blacklistedExtensions = $constraint->blacklistedExtensions;
 
@@ -89,7 +103,7 @@ class ExtensionValidator extends ConstraintValidator
         }
 
         return in_array(
-            $file->getExtension(),
+            $extension,
             $blacklistedExtensions,
             true
         );
